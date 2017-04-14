@@ -11,6 +11,19 @@ describe "ImageEditor", ->
       state.filePath = 'bogus'
       expect(ImageEditor.deserialize(state)).toBeUndefined()
 
+    it "returns undefined if scheme (protocol) is not file: or null", ->
+      spyOn(console, 'warn') # suppress logging in spec
+      editor = new ImageEditor(path.join(__dirname, 'fixtures', 'binary-file.png'))
+      state = editor.serialize()
+      expect(ImageEditor.deserialize(state)).toBeDefined()
+      filepath = state.filePath
+      state.filePath = 'file://' + filepath
+      expect(ImageEditor.deserialize(state)).toBeDefined()
+      state.filePath = 'foo://' + filepath
+      expect(ImageEditor.deserialize(state)).toBeUndefined()
+      state.filePath = 'bar:' + filepath
+      expect(ImageEditor.deserialize(state)).toBeUndefined()
+
   describe ".activate()", ->
     it "registers a project opener that handles image file extension", ->
       waitsForPromise ->
@@ -28,6 +41,29 @@ describe "ImageEditor", ->
         atom.packages.deactivatePackage('image-view')
 
         atom.workspace.open(path.join(__dirname, 'fixtures', 'binary-file.png'))
+
+      waitsFor ->
+        atom.workspace.getActivePaneItem()?
+
+      runs ->
+        expect(atom.workspace.getActivePaneItem() instanceof ImageEditor).toBe false
+
+    it "registers a project opener that handles image file extension with file: scheme", ->
+      waitsForPromise ->
+        atom.packages.activatePackage('image-view')
+
+      runs ->
+        atom.workspace.open("file://#{path.join(__dirname, 'fixtures', 'binary-file.png')}")
+
+      waitsFor ->
+        atom.workspace.getActivePaneItem() instanceof ImageEditor
+
+      runs ->
+        expect(atom.workspace.getActivePaneItem().getTitle()).toBe 'binary-file.png'
+        atom.workspace.destroyActivePaneItem()
+        atom.packages.deactivatePackage('image-view')
+
+        atom.workspace.open("file://#{path.join(__dirname, 'fixtures', 'binary-file.png')}")
 
       waitsFor ->
         atom.workspace.getActivePaneItem()?

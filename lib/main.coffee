@@ -1,4 +1,5 @@
 path = require 'path'
+url = require 'url'
 _ = require 'underscore-plus'
 ImageEditor = require './image-editor'
 {CompositeDisposable} = require 'atom'
@@ -31,6 +32,10 @@ module.exports =
 # Files with these extensions will be opened as images
 imageExtensions = ['.bmp', '.gif', '.ico', '.jpeg', '.jpg', '.png', '.webp']
 openURI = (uriToOpen) ->
+  parsedUrl = url.parse(uriToOpen)
+  return if parsedUrl.protocol? and parsedUrl.protocol isnt 'file:'
+  uriToOpen = parsedUrl.path
+
   uriExtension = path.extname(uriToOpen).toLowerCase()
   if _.include(imageExtensions, uriExtension)
     new ImageEditor(uriToOpen)
